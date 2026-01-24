@@ -80,8 +80,7 @@ contribute:
 	@sed -i -e 's/\x1b\[[0-9;]*m//g' proof_of_burn_logs.txt
 	@sed -i -e 's/\x1b\[[0-9;]*m//g' spend_logs.txt
 
-	@cd $(CONTRIB_NAME) && tar czf $(CONTRIB_NAME).tar.gz *.zkey
-	@cd $(CONTRIB_NAME) && split -b1G $(CONTRIB_NAME).tar.gz $(CONTRIB_NAME).tar.gz.
+	@cd $(CONTRIB_NAME) && tar czf - *.zkey | split -b1G - $(CONTRIB_NAME).tar.gz.
 
 	@cd $(CONTRIB_NAME) && echo "Release: https://github.com/$(NAME)/trusted-setup/releases/tag/$(CONTRIB_NAME) \n" > README.md
 	@cd $(CONTRIB_NAME) && echo "Note: $(PERSONAL_NOTE) \n" >> README.md
@@ -155,7 +154,7 @@ beacon:
 	@echo "Applying random beacon to Proof-of-Burn parameters..."
 	@snarkjs zkey beacon params_old/proof_of_burn.zkey final/proof_of_burn.zkey 0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f 10 -n="Final Beacon Proof-of-Burn" | tee proof_of_burn_logs.txt
 
-	@echo "Contributing to Spend parameters..."
+	@echo "Applying random beacon to Spend parameters..."
 	@snarkjs zkey beacon params_old/spend.zkey final/spend.zkey 0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f 10 -n="Final Beacon Spend" | tee spend_logs.txt
 
 	@echo "Generating Solidity verifiers..."
@@ -165,8 +164,7 @@ beacon:
 	@sed -i -e 's/\x1b\[[0-9;]*m//g' proof_of_burn_logs.txt
 	@sed -i -e 's/\x1b\[[0-9;]*m//g' spend_logs.txt
 
-	@cd final && tar czf final.tar.gz *.zkey
-	@cd final && split -b1G final.tar.gz final.tar.gz.
+	@cd final && tar czf - *.zkey | split -b1G - final.tar.gz.
 
 	@cd final && echo "Release: https://github.com/$(NAME)/trusted-setup/releases/tag/final \n" > README.md
 	@cd final && echo "Note: $(PERSONAL_NOTE) \n" >> README.md
