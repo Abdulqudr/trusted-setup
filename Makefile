@@ -9,6 +9,9 @@ CONTRIB_NAME := $(PREFIX)_$(NAME)
 WGET_ARGS := -q --show-progress
 PERSONAL_NOTE := ""
 
+# Beacon is the Ethereum block hash of block #12345678
+BEACON := b2a8b39935a5eb4b7c9b0117bca06c8d2c0629e0937d20e62c44aace6f05bda3
+
 verify:
 	@echo "Downloading parameter files..."
 	@mkdir -p params_old
@@ -152,10 +155,10 @@ beacon:
 	@mkdir -p final
 
 	@echo "Applying random beacon to Proof-of-Burn parameters..."
-	@snarkjs zkey beacon params_old/proof_of_burn.zkey final/proof_of_burn.zkey 0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f 10 -n="Final Beacon Proof-of-Burn" | tee proof_of_burn_logs.txt
+	@snarkjs zkey beacon params_old/proof_of_burn.zkey final/proof_of_burn.zkey $(BEACON) 10 -n="Final Beacon Proof-of-Burn" | tee proof_of_burn_logs.txt
 
 	@echo "Applying random beacon to Spend parameters..."
-	@snarkjs zkey beacon params_old/spend.zkey final/spend.zkey 0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f 10 -n="Final Beacon Spend" | tee spend_logs.txt
+	@snarkjs zkey beacon params_old/spend.zkey final/spend.zkey $(BEACON) 10 -n="Final Beacon Spend" | tee spend_logs.txt
 
 	@echo "Generating Solidity verifiers..."
 	@snarkjs zkey export solidityverifier final/spend.zkey final/SpendVerifier.sol
