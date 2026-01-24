@@ -130,3 +130,88 @@ contribute:
 	@gh repo set-default worm-privacy/trusted-setup
 	@gh pr create --head $(NAME):contrib/$(CONTRIB_NAME) --base main --title "$(NAME)'s contribution" --body-file $(CONTRIB_NAME)/README.md --repo worm-privacy/trusted-setup
 	@echo "Done!"
+
+beacon:
+	@echo "Logging in to your GitHub..."
+	@echo "$(PERSONAL_GH_TOKEN)" | gh auth login --with-token
+	
+	@echo "Downloading parameter files..."
+	@mkdir -p params_old
+	cd params_old && wget -O params.tar.gz.aa $(WGET_ARGS) -c $(PARAMS).aa
+	cd params_old && wget -O params.tar.gz.ab $(WGET_ARGS) -c $(PARAMS).ab
+	cd params_old && wget -O params.tar.gz.ac $(WGET_ARGS) -c $(PARAMS).ac
+	cd params_old && wget -O params.tar.gz.ad $(WGET_ARGS) -c $(PARAMS).ad
+	cd params_old && wget -O params.tar.gz.ae $(WGET_ARGS) -c $(PARAMS).ae
+	@echo "Extracting parameter files..."
+	@cat params_old/params.tar.gz.a* > params_old/params.tar.gz
+	@cd params_old && tar xzf params.tar.gz
+
+	ls params_old
+
+	@if [ "$$REMOVE_PARAMS" != "" ]; then rm -rf params_old/*.tar.gz params_old/*.tar.gz.*; fi
+
+	@mkdir -p final
+
+	@echo "Applying random beacon to Proof-of-Burn parameters..."
+	@snarkjs zkey beacon params_old/proof_of_burn.zkey final/proof_of_burn.zkey 0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f 10 -n="Final Beacon Proof-of-Burn" | tee proof_of_burn_logs.txt
+
+	@echo "Contributing to Spend parameters..."
+	@snarkjs zkey beacon params_old/spend.zkey final/spend.zkey 0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f 10 -n="Final Beacon Spend" | tee spend_logs.txt
+
+	@echo "Generating Solidity verifiers..."
+	@snarkjs zkey export solidityverifier final/spend.zkey final/SpendVerifier.sol
+	@snarkjs zkey export solidityverifier final/proof_of_burn.zkey final/ProofOfBurnVerifier.sol
+
+	@sed -i -e 's/\x1b\[[0-9;]*m//g' proof_of_burn_logs.txt
+	@sed -i -e 's/\x1b\[[0-9;]*m//g' spend_logs.txt
+
+	@cd final && tar czf final.tar.gz *.zkey
+	@cd final && split -b1G final.tar.gz final.tar.gz.
+
+	@cd final && echo "Release: https://github.com/$(NAME)/trusted-setup/releases/tag/final \n" > README.md
+	@cd final && echo "Note: $(PERSONAL_NOTE) \n" >> README.md
+	@cd final && echo "Parent params: $(PARAMS) \n" >> README.md
+	@cd final && echo "SnarkJS logs for Proof-of-Burn circuit:\n" >> README.md
+	@cd final && echo "\`\`\`" >> README.md
+	@cd final && cat ../proof_of_burn_logs.txt >> README.md
+	@cd final && echo "\`\`\`" >> README.md
+	@cd final && echo "\nSnarkJS logs for Spend circuit:\n" >> README.md
+	@cd final && echo "\`\`\`" >> README.md
+	@cd final && cat ../spend_logs.txt >> README.md
+	@cd final && echo "\`\`\`" >> README.md
+	
+	@echo "Uploading your contribution on GitHub..."
+
+	@gh repo set-default $(NAME)/trusted-setup
+	@cd final && gh release create final --title "Beacon contribution" --notes-file README.md final.tar.gz.* *.sol ../*_logs.txt
+	
+	@echo "Creating PR..."
+
+	@awk '\
+		/^CONTRIB_NUMBER[[:space:]]*:=/ { \
+			split($$0, a, ":="); \
+			num = a[2]; \
+			gsub(/^[ \t]+/, "", num); \
+			num += 1; \
+			print "CONTRIB_NUMBER := " num; \
+			next; \
+		} \
+		{ print $$0; } \
+	' Makefile > Makefile.tmp && mv Makefile.tmp Makefile
+
+	@awk -v newval='PARAMS := https://github.com/$(NAME)/trusted-setup/releases/download/final/final.tar.gz' ' \
+		/^PARAMS :=/ { print newval; next } \
+		{ print } \
+		' Makefile > Makefile.new && mv Makefile.new Makefile
+
+	@git checkout -b contrib/final
+	@git add final/README.md
+	@git add Makefile
+	@git config user.name $(NAME)
+	@git config user.email $(NAME)@users.noreply.github.com
+	@git commit -m "feat: Add $(NAME)'s contribution"
+	@git remote set-url origin https://x-access-token:$(PERSONAL_GH_TOKEN)@github.com/$(NAME)/trusted-setup.git
+	@GITHUB_TOKEN=$(PERSONAL_GH_TOKEN) git push origin contrib/final
+	@gh repo set-default worm-privacy/trusted-setup
+	@gh pr create --head $(NAME):contrib/final --base main --title "$(NAME)'s contribution" --body-file final/README.md --repo worm-privacy/trusted-setup
+	@echo "Done!"
