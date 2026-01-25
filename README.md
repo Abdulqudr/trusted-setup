@@ -4,6 +4,14 @@ Scripts used to perform the trusted setup ceremony for WORM Privacy circuits.
 
 ⚠️ Contributing to all circuits is expected to take at least one hour! ⚠️
 
+***UPDATE:*** WORM's trusted-setup ceremony concluded on 25th Jan 2026. There were 84 contributions as follows:
+* 1 contribution from https://circuitscan.org
+* 81 contributions from different people
+* 1 contribution done through a GitHub action server
+* 1 random-beacon contribution
+
+Final parameters along with Solidity verifiers are available here: https://github.com/worm-privacy/trusted-setup/releases/tag/final
+
 ## Step 1. Install the requirements
 
 1. Install `wget`: `sudo apt install wget`
